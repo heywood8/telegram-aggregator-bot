@@ -68,6 +68,11 @@ def test_remove_links_no_extra_newlines():
     assert remove_links("Some text\nhttps://example.com\nMore text") == "Some text\nMore text"
 
 
+def test_remove_links_no_extra_newlines_nbsp():
+    # \xa0 (non-breaking space) left on a line after URL removal must also be stripped
+    assert remove_links("Some text\n\xa0https://example.com\xa0\nMore text") == "Some text\nMore text"
+
+
 def test_remove_links_strips_www():
     assert remove_links("Visit www.example.com today") == "Visit  today"
 

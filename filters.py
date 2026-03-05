@@ -27,10 +27,12 @@ _URL_RE = re.compile(
 )
 
 
+_BLANK_LINE_RE = re.compile(r"^\s*$")  # matches lines with only whitespace incl. \xa0
+
+
 def remove_links(text: str) -> str:
     text = _URL_RE.sub("", text)
-    # Collapse lines that became empty or whitespace-only after link removal
-    lines = [line for line in text.splitlines() if line.strip()]
+    lines = [line for line in text.splitlines() if not _BLANK_LINE_RE.match(line)]
     return "\n".join(lines).strip()
 
 
