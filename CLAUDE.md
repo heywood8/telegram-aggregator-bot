@@ -1,4 +1,7 @@
 # Claude Instructions
 
+## General
+- Never use command substitution (`$(...)`) in any shell commands.
+
 ## Git Commits
-- Do not use command substitution (`$(cat <<'EOF'...EOF)`) for commit messages. Pass the message directly with `-m "..."` instead.
+- Pass commit messages directly with `-m "..."`. Never use heredoc or command substitution.
