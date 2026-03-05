@@ -10,7 +10,7 @@ from db import Database
 from handlers import start as start_handler
 from handlers import channels as channels_handler
 from handlers import settings as settings_handler
-import poller
+from handlers import dispatcher as dispatcher_handler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,16 +26,24 @@ async def get_db():
 
 
 async def main():
-    bot = Client("bot", api_id=config.API_ID, api_hash=config.API_HASH, bot_token=config.BOT_TOKEN)
-    user = Client("user", api_id=config.API_ID, api_hash=config.API_HASH)
+    app = Client("bot", api_id=config.API_ID, api_hash=config.API_HASH, bot_token=config.BOT_TOKEN)
 
-    start_handler.register(bot, get_db)
-    channels_handler.register(bot, get_db)
-    settings_handler.register(bot, get_db)
+    start_handler.register(app, get_db)
+    channels_handler.register(app, get_db)
+    settings_handler.register(app, get_db)
+    dispatcher_handler.register(app, get_db)
 
-    async with bot, user:
-        logger.info("Bot started")
-        asyncio.create_task(poller.run_poller(user, bot, get_db))
+    async with app:
+        # Re-join all subscribed channels on startup
+        async with get_db() as db:
+            channels = await db.get_active_channels()
+        for channel in channels:
+            try:
+                await app.join_chat(channel)
+            except Exception as e:
+                logger.warning("Could not re-join %s: %s", channel, e)
+
+        logger.info("Bot started, monitoring %d channel(s)", len(channels))
         await asyncio.Event().wait()
 
 
