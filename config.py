@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 ALLOWED_USERS = set(int(uid) for uid in os.environ["ALLOWED_USERS"].split(","))
