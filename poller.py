@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import aiohttp
 from pyrogram import Client
 
@@ -39,8 +40,12 @@ async def poll_once(bot: Client, db: Database, session: aiohttp.ClientSession):
                             body = remove_emojis(body)
                         if sub["strip_links"]:
                             body = remove_links(body)
-                        footer = f"[{channel_title}]({link})"
-                        text = f"{body}\n\n{footer}" if body else footer
+                        linked = f"[{channel_title}]({link})"
+                        pattern = re.compile(re.escape(channel_title), re.IGNORECASE)
+                        if body and pattern.search(body):
+                            text = pattern.sub(lambda _: linked, body, count=1)
+                        else:
+                            text = f"{body}\n\n{linked}" if body else linked
                         try:
                             await bot.send_message(
                                 chat_id=sub["user_id"],
