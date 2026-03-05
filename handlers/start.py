@@ -1,8 +1,12 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message
-import aiosqlite
+from pyrogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 import config
 from db import Database
+
+MAIN_KEYBOARD = ReplyKeyboardMarkup(
+    [[KeyboardButton("📋 My Channels")]],
+    resize_keyboard=True,
+)
 
 
 def register(app: Client, get_db: callable):
@@ -21,5 +25,6 @@ def register(app: Client, get_db: callable):
 
         await message.reply(
             "Welcome to the News Aggregator Bot!\n\n"
-            "Use /channels to manage your channel subscriptions."
+            "Use the button below to manage your channel subscriptions.",
+            reply_markup=MAIN_KEYBOARD,
         )

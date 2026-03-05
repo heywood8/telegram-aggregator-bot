@@ -34,7 +34,7 @@ def channels_list_keyboard(subscriptions: list[dict]) -> InlineKeyboardMarkup:
 
 def register(app: Client, get_db):
 
-    @app.on_message(filters.command("channels") & filters.private)
+    @app.on_message(filters.private & (filters.command("channels") | filters.regex(r"^📋 My Channels$")))
     async def channels_cmd(client: Client, message: Message):
         if not _auth(message.from_user.id):
             return
