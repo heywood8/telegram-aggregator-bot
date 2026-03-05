@@ -9,6 +9,7 @@ import config
 from db import Database
 from handlers import start as start_handler
 from handlers import channels as channels_handler
+from handlers import settings as settings_handler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ async def main():
 
     start_handler.register(app, get_db)
     channels_handler.register(app, get_db)
+    settings_handler.register(app, get_db)
 
     async with app:
         logger.info("Bot started")
