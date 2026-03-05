@@ -13,8 +13,8 @@ class Database:
                 channel       TEXT    NOT NULL,
                 mode          TEXT    NOT NULL DEFAULT 'all',
                 active        INTEGER NOT NULL DEFAULT 1,
-                strip_emojis  INTEGER NOT NULL DEFAULT 0,
-                strip_links   INTEGER NOT NULL DEFAULT 0,
+                strip_emojis  INTEGER NOT NULL DEFAULT 1,
+                strip_links   INTEGER NOT NULL DEFAULT 1,
                 PRIMARY KEY (user_id, channel)
             );
 
@@ -32,8 +32,8 @@ class Database:
         """)
         # Migration: add strip_emojis column if it doesn't exist yet
         for col, definition in [
-            ("strip_emojis", "INTEGER NOT NULL DEFAULT 0"),
-            ("strip_links", "INTEGER NOT NULL DEFAULT 0"),
+            ("strip_emojis", "INTEGER NOT NULL DEFAULT 1"),
+            ("strip_links", "INTEGER NOT NULL DEFAULT 1"),
         ]:
             try:
                 await self.conn.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} {definition}")
