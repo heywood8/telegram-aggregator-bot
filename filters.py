@@ -28,7 +28,10 @@ _URL_RE = re.compile(
 
 
 def remove_links(text: str) -> str:
-    return _URL_RE.sub("", text).strip()
+    text = _URL_RE.sub("", text)
+    # Collapse lines that became empty or whitespace-only after link removal
+    lines = [line for line in text.splitlines() if line.strip()]
+    return "\n".join(lines).strip()
 
 
 def should_forward(text: Optional[str], mode: str, keywords: list[str]) -> bool:

@@ -64,6 +64,10 @@ def test_remove_links_strips_urls():
     assert remove_links("Check https://example.com for details") == "Check  for details"
 
 
+def test_remove_links_no_extra_newlines():
+    assert remove_links("Some text\nhttps://example.com\nMore text") == "Some text\nMore text"
+
+
 def test_remove_links_strips_www():
     assert remove_links("Visit www.example.com today") == "Visit  today"
 
