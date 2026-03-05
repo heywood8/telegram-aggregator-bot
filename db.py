@@ -69,7 +69,7 @@ class Database:
             (user_id,),
         ) as cursor:
             rows = await cursor.fetchall()
-        return [{"channel": r[0], "mode": r[1], "active": r[2], "strip_emojis": r[3], "strip_links": r[4]} for r in rows]
+        return [{"channel": r[0], "mode": r[1], "active": r[2], "strip_emojis": bool(r[3]), "strip_links": bool(r[4])} for r in rows]
 
     async def add_keyword(self, user_id: int, channel: str, keyword: str):
         await self.conn.execute(
