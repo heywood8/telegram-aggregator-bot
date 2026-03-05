@@ -3,6 +3,7 @@ import logging
 import os
 import aiosqlite
 from pyrogram import Client
+from pyrogram.types import BotCommand
 from contextlib import asynccontextmanager
 
 import config
@@ -34,8 +35,8 @@ async def main():
 
     async with app:
         await app.set_bot_commands([
-            ("start", "Start the bot"),
-            ("channels", "List and manage your subscribed channels"),
+            BotCommand("start", "Start the bot"),
+            BotCommand("channels", "List and manage your subscribed channels"),
         ])
         logger.info("Bot started")
         asyncio.create_task(poller.run_poller(app, get_db))
