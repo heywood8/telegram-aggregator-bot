@@ -129,8 +129,6 @@ private fun FeedItem(message: Message) {
                 text = message.text,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp),
-                maxLines = 6,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }
