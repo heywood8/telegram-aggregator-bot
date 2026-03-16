@@ -1,6 +1,7 @@
 package com.heywood8.telegramnews.domain.usecase
 
 import app.cash.turbine.test
+import com.heywood8.telegramnews.domain.model.AuthState
 import com.heywood8.telegramnews.domain.model.Channel
 import com.heywood8.telegramnews.domain.model.Message
 import com.heywood8.telegramnews.domain.model.Subscription
@@ -33,11 +34,16 @@ class FeedUseCaseTest {
 
     private fun fakeTelegramRepo(messages: List<Message>): TelegramRepository =
         object : TelegramRepository {
+            override val authState: Flow<AuthState> = flowOf(AuthState.LoggedIn)
             override fun observeNewMessages(channels: List<String>): Flow<Message> =
                 flowOf(*messages.toTypedArray())
             override suspend fun fetchMessagesSince(channel: String, afterMessageId: Long) = messages
             override suspend fun searchChannel(query: String): List<Channel> = emptyList()
             override suspend fun isLoggedIn(): Boolean = true
+            override suspend fun sendPhoneNumber(phone: String) = Unit
+            override suspend fun sendCode(code: String) = Unit
+            override suspend fun sendPassword(password: String) = Unit
+            override suspend fun logOut() = Unit
         }
 
     @Test
