@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class MessageEntity(
     @PrimaryKey val id: Long,
     val channel: String,
+    val channelTitle: String,
     val text: String,
     val timestamp: Long,
     val mediaType: String? = null,

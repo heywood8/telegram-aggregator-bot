@@ -93,7 +93,7 @@ fun AuthScreen(
                 CircularProgressIndicator()
             } else {
                 when (authState) {
-                    AuthState.WaitingForPhone, AuthState.Unknown, AuthState.LoggedOut -> PhoneStep(
+                    AuthState.WaitingForPhone -> PhoneStep(
                         onSubmit = viewModel::sendPhoneNumber
                     )
                     AuthState.WaitingForCode -> CodeStep(

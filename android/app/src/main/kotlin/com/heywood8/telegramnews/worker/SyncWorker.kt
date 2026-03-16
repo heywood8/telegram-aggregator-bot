@@ -31,6 +31,7 @@ class SyncWorker @AssistedInject constructor(
                         MessageEntity(
                             id = msg.id,
                             channel = msg.channel,
+                            channelTitle = msg.channelTitle,
                             text = msg.text,
                             timestamp = msg.timestamp,
                         )

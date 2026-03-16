@@ -8,6 +8,7 @@ import com.heywood8.telegramnews.domain.model.Channel
 import com.heywood8.telegramnews.domain.model.Message
 import com.heywood8.telegramnews.domain.repository.TelegramRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlinx.telegram.core.TelegramFlow
-import kotlinx.telegram.coroutines.setTdlibParameters
 import kotlinx.telegram.flows.authorizationStateFlow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -44,31 +44,29 @@ class TelegramRepositoryImpl @Inject constructor(
 
     private fun initTdlib() {
         api.attachClient()
-        scope.launch {
+        val handler = CoroutineExceptionHandler { _, _ -> initTdlib() }
+        scope.launch(handler) {
             api.authorizationStateFlow().collect { state ->
                 when (state) {
                     is TdApi.AuthorizationStateWaitTdlibParameters -> {
                         try {
-                            api.setTdlibParameters(
-                                useTestDc = false,
-                                databaseDirectory = tdDbDir.absolutePath,
-                                filesDirectory = tdFilesDir.absolutePath,
-                                databaseEncryptionKey = byteArrayOf(),
-                                useFileDatabase = true,
-                                useChatInfoDatabase = true,
-                                useMessageDatabase = true,
-                                useSecretChats = false,
-                                apiId = BuildConfig.TELEGRAM_API_ID,
-                                apiHash = BuildConfig.TELEGRAM_API_HASH,
-                                systemLanguageCode = "en",
-                                deviceModel = Build.MODEL,
-                                systemVersion = Build.VERSION.RELEASE,
-                                applicationVersion = "1.0"
-                            )
-                        } catch (e: Exception) {
-                            clearTdlibDatabase()
-                            api.attachClient()
-                        }
+                            api.sendFunctionAsync(TdApi.SetTdlibParameters().also {
+                                it.useTestDc = false
+                                it.databaseDirectory = tdDbDir.absolutePath
+                                it.filesDirectory = tdFilesDir.absolutePath
+                                it.databaseEncryptionKey = byteArrayOf()
+                                it.useFileDatabase = true
+                                it.useChatInfoDatabase = true
+                                it.useMessageDatabase = true
+                                it.useSecretChats = false
+                                it.apiId = BuildConfig.TELEGRAM_API_ID
+                                it.apiHash = BuildConfig.TELEGRAM_API_HASH
+                                it.systemLanguageCode = "en"
+                                it.deviceModel = Build.MODEL
+                                it.systemVersion = Build.VERSION.RELEASE
+                                it.applicationVersion = "1.0"
+                            })
+                        } catch (_: Exception) {}
                     }
                     is TdApi.AuthorizationStateClosed -> api.attachClient()
                     else -> {}
@@ -183,12 +181,40 @@ class TelegramRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun extractText(content: TdApi.MessageContent): String = when (content) {
-        is TdApi.MessageText -> content.text.text
-        is TdApi.MessagePhoto -> content.caption?.text.orEmpty()
-        is TdApi.MessageVideo -> content.caption?.text.orEmpty()
-        is TdApi.MessageDocument -> content.caption?.text.orEmpty()
-        is TdApi.MessageAnimation -> content.caption?.text.orEmpty()
-        else -> ""
+    private fun extractText(content: TdApi.MessageContent): String {
+        val raw = when (content) {
+            is TdApi.MessageText -> content.text.text
+            is TdApi.MessagePhoto -> content.caption?.text.orEmpty()
+            is TdApi.MessageVideo -> content.caption?.text.orEmpty()
+            is TdApi.MessageDocument -> content.caption?.text.orEmpty()
+            is TdApi.MessageAnimation -> content.caption?.text.orEmpty()
+            else -> ""
+        }
+        return cleanText(raw)
+    }
+
+    private fun cleanText(text: String): String {
+        // Drop trailing lines that are blank or consist only of emojis/symbols (channel signatures)
+        val lines = text.lines().toMutableList()
+        while (lines.isNotEmpty() && lines.last().stripEmojis().isBlank()) {
+            lines.removeLast()
+        }
+        return lines.joinToString("\n").stripEmojis().trim()
+    }
+
+    private fun String.stripEmojis(): String =
+        replace(EMOJI_REGEX, "").replace(Regex(" {2,}"), " ")
+
+    companion object {
+        // Covers most Unicode emoji blocks and variation selectors
+        private val EMOJI_REGEX = Regex(
+            "[\uD83C-\uDBFF][\uDC00-\uDFFF]" +   // surrogate pairs (most emoji)
+            "|[\u2600-\u27FF]\uFE0F?" +             // misc symbols & dingbats
+            "|[\u2300-\u23FF]\uFE0F?" +             // misc technical
+            "|[\u2B00-\u2BFF]\uFE0F?" +             // misc symbols arrows
+            "|[\u3000-\u303F]" +                    // CJK symbols
+            "|[\uFE00-\uFE0F]" +                    // variation selectors
+            "|\u200D"                               // zero-width joiner
+        )
     }
 }
