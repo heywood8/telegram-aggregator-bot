@@ -78,7 +78,6 @@ dependencies {
 
     implementation(libs.work.runtime.ktx)
     implementation(libs.coroutines.android)
-    implementation(libs.tdktx)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
