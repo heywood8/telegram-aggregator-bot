@@ -1,0 +1,11 @@
+package com.heywood8.telegramnews.data.local.entity
+
+import androidx.room.Entity
+
+@Entity(tableName = "subscriptions", primaryKeys = ["userId", "channel"])
+data class SubscriptionEntity(
+    val userId: Long,
+    val channel: String,
+    val mode: String = "all",
+    val active: Boolean = true
+)

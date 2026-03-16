@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.TelegramNews" parent="Theme.AppCompat.Light.NoActionBar" />
+</resources>

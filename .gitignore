@@ -1,7 +1,10 @@
 __pycache__/
 *.pyc
 .env
-data/
+/data/
 *.session
 *.session-journal
 .worktrees/
+android/local.properties
+android/app/*.jks
+android/app/*.keystore

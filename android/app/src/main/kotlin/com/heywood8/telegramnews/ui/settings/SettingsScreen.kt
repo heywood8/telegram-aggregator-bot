@@ -1,0 +1,90 @@
+package com.heywood8.telegramnews.ui.settings
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Settings") }) },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            Text(
+                "Account",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            ListItem(
+                headlineContent = { Text("Sign out") },
+                supportingContent = { Text("Sign out of your Telegram account") },
+                modifier = Modifier.fillMaxWidth(),
+                trailingContent = {
+                    TextButton(onClick = { showLogoutDialog = true }) {
+                        Text("Sign out", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+            )
+            Divider()
+            Text(
+                "Sync",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            ListItem(
+                headlineContent = { Text("Background sync") },
+                supportingContent = { Text("Messages are synced every 15 minutes in the background") },
+            )
+        }
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Sign out?") },
+            text = { Text("You will need to sign in again to receive messages.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.logOut()
+                        showLogoutDialog = false
+                    },
+                ) {
+                    Text("Sign out", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+}
