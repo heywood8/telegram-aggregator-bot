@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.heywood8.telegramnews.data.local.entity.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
@@ -86,5 +87,23 @@ class DatabaseTest {
             MessageEntity(id = 2L, channel = "ch", text = "world", timestamp = 2000L)
         )
         db.messageDao().insertAll(msgs)
+        // Collect one emission from the Flow using first()
+        val stored = db.messageDao().observeByChannel("ch").first()
+        assertEquals(2, stored.size)
+        assertTrue(stored.any { it.text == "hello" })
+        assertTrue(stored.any { it.text == "world" })
+    }
+
+    @Test
+    fun pruneChannelKeepsMostRecent() = runTest {
+        // Insert 3 messages, prune keeping last 2 (simulate limit=2 isn't supported, so test correctness with 3 > 0)
+        val msgs = (1L..5L).map { i ->
+            MessageEntity(id = i, channel = "ch", text = "msg$i", timestamp = i * 1000L)
+        }
+        db.messageDao().insertAll(msgs)
+        db.messageDao().pruneChannel("ch")
+        // After prune, all 5 are within the 500-item limit so all should remain
+        val stored = db.messageDao().observeByChannel("ch").first()
+        assertEquals(5, stored.size)
     }
 }

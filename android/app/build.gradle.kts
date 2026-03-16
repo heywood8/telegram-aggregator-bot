@@ -87,4 +87,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test)
+    androidTestImplementation(libs.turbine)
 }
