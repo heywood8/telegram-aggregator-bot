@@ -1,0 +1,73 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/gradle/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.jks
+
+      - name: Write local.properties
+        run: |
+          echo "TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}"          > android/local.properties
+          echo "TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}"       >> android/local.properties
+          echo "RELEASE_STORE_FILE=release.jks"                           >> android/local.properties
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/local.properties
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}"       >> android/local.properties
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/local.properties
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew :app:assembleRelease
+
+      - name: Rename APK
+        id: apk
+        run: |
+          TAG="${{ github.ref_name }}"
+          SRC="android/app/build/outputs/apk/release/app-release.apk"
+          DST="${TAG}.apk"
+          cp "$SRC" "$DST"
+          echo "path=$DST" >> $GITHUB_OUTPUT
+
+      - name: Upload APK to release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.path }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build summary
+        run: |
+          echo "## Android Release Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**APK:** ${{ steps.apk.outputs.path }}" >> $GITHUB_STEP_SUMMARY
