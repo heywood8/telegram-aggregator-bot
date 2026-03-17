@@ -8,6 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Commits
 - Pass commit messages directly with `-m "..."`. Never use heredoc or command substitution.
+- Follow [Conventional Commits](https://www.conventionalcommits.org/) / Release Please format:
+  - `feat: <description>` — new feature (triggers minor release)
+  - `fix: <description>` — bug fix (triggers patch release)
+  - `chore: <description>` — maintenance, deps, tooling (no release)
+  - `docs: <description>` — documentation only
+  - `refactor: <description>` — code change without feature/fix
+  - `test: <description>` — adding or updating tests
+  - `perf: <description>` — performance improvement
+  - Add `!` after the type (e.g. `feat!:`) or a `BREAKING CHANGE:` footer for breaking changes (triggers major release)
+  - Scope is optional: `feat(auth): support phone login`
 
 ## Build Commands
 
