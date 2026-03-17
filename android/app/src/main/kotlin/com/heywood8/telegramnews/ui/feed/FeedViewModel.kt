@@ -7,6 +7,7 @@ import com.heywood8.telegramnews.data.local.dao.MessageDao
 import com.heywood8.telegramnews.data.local.dao.ReadMessageDao
 import com.heywood8.telegramnews.data.local.entity.MessageEntity
 import com.heywood8.telegramnews.data.local.entity.ReadMessageEntity
+import com.heywood8.telegramnews.domain.model.MediaType
 import com.heywood8.telegramnews.domain.model.Message
 import com.heywood8.telegramnews.domain.model.Subscription
 import com.heywood8.telegramnews.domain.repository.LocalRepository
@@ -69,7 +70,7 @@ class FeedViewModel @Inject constructor(
         val channelFiltered = if (channel == null) withRead else withRead.filter { it.channel == channel }
         channelFiltered.filter { message ->
             val includePhotos = subscriptionsByChannel[message.channel]?.includePhotos ?: false
-            includePhotos || message.mediaType != "photo" || message.text.isNotBlank()
+            includePhotos || message.mediaType != MediaType.PHOTO || message.text.isNotBlank()
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -122,12 +123,12 @@ class FeedViewModel @Inject constructor(
                 try {
                     val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
                     val filtered = messages.filter { msg ->
-                        (msg.mediaType == "photo" && msg.text.isBlank()) ||
+                        (msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
                             filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                     }
                     if (filtered.isNotEmpty()) {
                         messageDao.insertAll(filtered.map { msg ->
-                            MessageEntity(msg.id, msg.channel, msg.channelTitle, msg.text, msg.timestamp, msg.mediaType)
+                            MessageEntity(id = msg.id, channel = msg.channel, channelTitle = msg.channelTitle, text = msg.text, timestamp = msg.timestamp, mediaType = msg.mediaType)
                         })
                         messageDao.pruneChannel(sub.channel)
                     }
@@ -146,7 +147,7 @@ class FeedViewModel @Inject constructor(
                     telegramRepo.observeNewMessages(channels)
                         .filter { msg ->
                             val sub = subs.find { it.channel == msg.channel } ?: return@filter false
-                            (msg.mediaType == "photo" && msg.text.isBlank()) ||
+                            (msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
                                 filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                         }
                 }
@@ -164,12 +165,12 @@ class FeedViewModel @Inject constructor(
                 try {
                     val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
                     val filtered = messages.filter { msg ->
-                        (msg.mediaType == "photo" && msg.text.isBlank()) ||
+                        (msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
                             filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                     }
                     if (filtered.isNotEmpty()) {
                         messageDao.insertAll(filtered.map { msg ->
-                            MessageEntity(msg.id, msg.channel, msg.channelTitle, msg.text, msg.timestamp, msg.mediaType)
+                            MessageEntity(id = msg.id, channel = msg.channel, channelTitle = msg.channelTitle, text = msg.text, timestamp = msg.timestamp, mediaType = msg.mediaType)
                         })
                         messageDao.pruneChannel(sub.channel)
                     }

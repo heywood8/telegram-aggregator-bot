@@ -5,6 +5,7 @@ import android.os.Build
 import com.heywood8.telegramnews.BuildConfig
 import com.heywood8.telegramnews.domain.model.AuthState
 import com.heywood8.telegramnews.domain.model.Channel
+import com.heywood8.telegramnews.domain.model.MediaType
 import com.heywood8.telegramnews.domain.model.Message
 import com.heywood8.telegramnews.domain.repository.TelegramRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,10 +32,6 @@ import javax.inject.Singleton
 class TelegramRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : TelegramRepository {
-
-    companion object {
-        private const val MEDIA_TYPE_PHOTO = "photo"
-    }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val api = TelegramFlow()
@@ -136,7 +133,7 @@ class TelegramRepositoryImpl @Inject constructor(
                 val title = chatIdToTitle[msg.chatId] ?: username
                 val text = extractText(msg.content, title)
                 val mediaType = extractMediaType(msg.content)
-                if (text.isNotBlank() || mediaType == MEDIA_TYPE_PHOTO) {
+                if (text.isNotBlank() || mediaType == MediaType.PHOTO) {
                     send(
                         Message(
                             id = msg.id,
@@ -161,7 +158,7 @@ class TelegramRepositoryImpl @Inject constructor(
             result.messages?.mapNotNull { msg ->
                 val rawText = extractText(msg.content, chat.title)
                 val mediaType = extractMediaType(msg.content)
-                if (rawText.isBlank() && mediaType != MEDIA_TYPE_PHOTO) return@mapNotNull null
+                if (rawText.isBlank() && mediaType != MediaType.PHOTO) return@mapNotNull null
                 Message(
                     id = msg.id,
                     channel = channel,
@@ -191,7 +188,7 @@ class TelegramRepositoryImpl @Inject constructor(
     }
 
     private fun extractMediaType(content: TdApi.MessageContent): String? = when (content) {
-        is TdApi.MessagePhoto -> MEDIA_TYPE_PHOTO
+        is TdApi.MessagePhoto -> MediaType.PHOTO
         is TdApi.MessageVideo -> "video"
         is TdApi.MessageDocument -> "document"
         is TdApi.MessageAnimation -> "animation"
