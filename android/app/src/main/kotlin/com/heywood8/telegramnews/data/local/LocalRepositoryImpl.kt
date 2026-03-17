@@ -26,6 +26,7 @@ class LocalRepositoryImpl @Inject constructor(
                 Subscription(
                     channel = entity.channel,
                     mode = entity.mode,
+                    // TODO: keywords are not joined here — callers must fetch them separately via getKeywords()
                     keywords = emptyList(),
                     active = entity.active,
                     includePhotos = entity.includePhotos,

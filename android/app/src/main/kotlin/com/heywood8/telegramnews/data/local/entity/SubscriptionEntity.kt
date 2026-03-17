@@ -9,6 +9,6 @@ data class SubscriptionEntity(
     val channel: String,
     val mode: String = "all",
     val active: Boolean = true,
-    @ColumnInfo(name = "include_photos", defaultValue = "0")
+    @ColumnInfo(name = "include_photos")
     val includePhotos: Boolean = false,
 )
