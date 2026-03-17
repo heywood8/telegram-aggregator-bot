@@ -89,6 +89,14 @@ class ChannelViewModel @Inject constructor(
         }
     }
 
+    fun setIncludePhotos(channel: String, value: Boolean) {
+        viewModelScope.launch {
+            localRepo.setIncludePhotos(FeedViewModel.USER_ID, channel, value)
+            _selectedSub.value = subscriptions.value.find { it.channel == channel }
+                ?.copy(includePhotos = value)
+        }
+    }
+
     fun addKeyword(channel: String, keyword: String) {
         viewModelScope.launch {
             subscriptionUseCase.addKeyword(FeedViewModel.USER_ID, channel, keyword)
