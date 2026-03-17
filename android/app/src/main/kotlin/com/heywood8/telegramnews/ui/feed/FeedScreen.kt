@@ -1,6 +1,8 @@
 package com.heywood8.telegramnews.ui.feed
 
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -120,7 +123,12 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                         onClick = { viewModel.selectChannel(null) },
                         label = { Text(allLabel) },
                         modifier = Modifier.pointerInput(Unit) {
-                            detectTapGestures(onLongPress = { viewModel.markAllRead() })
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    waitForUpOrCancellation()
+                                } ?: viewModel.markAllRead()
+                            }
                         },
                     )
                     subscriptions.filter { it.active }.forEach { sub ->
@@ -131,7 +139,12 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                             onClick = { viewModel.selectChannel(sub.channel) },
                             label = { Text(chipLabel) },
                             modifier = Modifier.pointerInput(sub.channel) {
-                                detectTapGestures(onLongPress = { viewModel.markChannelRead(sub.channel) })
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                        waitForUpOrCancellation()
+                                    } ?: viewModel.markChannelRead(sub.channel)
+                                }
                             },
                         )
                     }
