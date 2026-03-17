@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
     val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     val selectedChannel by viewModel.selectedChannel.collectAsStateWithLifecycle()
     val showChannelIcons by viewModel.showChannelIcons.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -89,24 +91,30 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
 
             var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
-            if (messages.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "No messages yet.\nAdd channels to start receiving news.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(messages, key = { it.id }) { message ->
-                        FeedItem(message, showChannelIcons, onClick = { selectedMessage = message })
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (messages.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "No messages yet.\nAdd channels to start receiving news.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(messages, key = { it.id }) { message ->
+                            FeedItem(message, showChannelIcons, onClick = { selectedMessage = message })
+                        }
                     }
                 }
             }

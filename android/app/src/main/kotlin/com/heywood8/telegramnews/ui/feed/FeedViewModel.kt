@@ -47,6 +47,9 @@ class FeedViewModel @Inject constructor(
     private val _selectedChannel = MutableStateFlow<String?>(null)
     val selectedChannel: StateFlow<String?> = _selectedChannel.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     val filteredMessages: StateFlow<List<Message>> = combine(
         messageDao.observeAll().map { entities ->
             entities.map { e -> Message(e.id, e.channel, e.channelTitle.ifBlank { e.channel }, e.text, e.timestamp) }
@@ -97,5 +100,27 @@ class FeedViewModel @Inject constructor(
 
     fun selectChannel(channel: String?) {
         _selectedChannel.value = channel
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            val subs = localRepo.observeSubscriptions(USER_ID).first()
+            for (sub in subs.filter { it.active }) {
+                try {
+                    val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
+                    val filtered = messages.filter {
+                        filterUseCase.shouldForward(it.text, sub.mode, sub.keywords)
+                    }
+                    if (filtered.isNotEmpty()) {
+                        messageDao.insertAll(filtered.map { msg ->
+                            MessageEntity(msg.id, msg.channel, msg.channelTitle, msg.text, msg.timestamp)
+                        })
+                        messageDao.pruneChannel(sub.channel)
+                    }
+                } catch (_: Exception) {}
+            }
+            _isRefreshing.value = false
+        }
     }
 }
