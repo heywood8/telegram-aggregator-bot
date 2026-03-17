@@ -32,6 +32,10 @@ class TelegramRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : TelegramRepository {
 
+    companion object {
+        private const val MEDIA_TYPE_PHOTO = "photo"
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val api = TelegramFlow()
     private val tdDbDir get() = File(context.filesDir, "td")
@@ -132,7 +136,7 @@ class TelegramRepositoryImpl @Inject constructor(
                 val title = chatIdToTitle[msg.chatId] ?: username
                 val text = extractText(msg.content, title)
                 val mediaType = extractMediaType(msg.content)
-                if (text.isNotBlank() || mediaType == "photo") {
+                if (text.isNotBlank() || mediaType == MEDIA_TYPE_PHOTO) {
                     send(
                         Message(
                             id = msg.id,
@@ -157,7 +161,7 @@ class TelegramRepositoryImpl @Inject constructor(
             result.messages?.mapNotNull { msg ->
                 val rawText = extractText(msg.content, chat.title)
                 val mediaType = extractMediaType(msg.content)
-                if (rawText.isBlank() && mediaType != "photo") return@mapNotNull null
+                if (rawText.isBlank() && mediaType != MEDIA_TYPE_PHOTO) return@mapNotNull null
                 Message(
                     id = msg.id,
                     channel = channel,
@@ -187,7 +191,7 @@ class TelegramRepositoryImpl @Inject constructor(
     }
 
     private fun extractMediaType(content: TdApi.MessageContent): String? = when (content) {
-        is TdApi.MessagePhoto -> "photo"
+        is TdApi.MessagePhoto -> MEDIA_TYPE_PHOTO
         is TdApi.MessageVideo -> "video"
         is TdApi.MessageDocument -> "document"
         is TdApi.MessageAnimation -> "animation"
