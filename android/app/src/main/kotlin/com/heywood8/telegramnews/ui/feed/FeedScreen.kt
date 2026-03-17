@@ -44,10 +44,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.heywood8.telegramnews.domain.model.MediaType
 import com.heywood8.telegramnews.domain.model.Message
 import com.heywood8.telegramnews.ui.common.ChannelIcon
 import java.time.Instant
@@ -269,8 +274,15 @@ private fun FeedItem(message: Message, showChannelIcons: Boolean, onClick: () ->
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            val bodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank()) {
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append("[Photo]") }
+                }
+            } else {
+                buildAnnotatedString { append(message.text) }
+            }
             Text(
-                text = message.text,
+                text = bodyText,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp),
                 maxLines = 6,
@@ -305,8 +317,15 @@ private fun ArticleSheet(message: Message, onDismiss: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
+            val articleBodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank()) {
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append("[Photo]") }
+                }
+            } else {
+                buildAnnotatedString { append(message.text) }
+            }
             Text(
-                text = message.text,
+                text = articleBodyText,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 12.dp),
             )

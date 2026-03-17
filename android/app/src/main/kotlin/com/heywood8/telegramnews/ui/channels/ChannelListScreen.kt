@@ -158,6 +158,7 @@ fun ChannelListScreen(viewModel: ChannelViewModel = hiltViewModel()) {
                 onSetMode = { mode -> viewModel.setMode(selectedSub!!.channel, mode) },
                 onAddKeyword = { kw -> viewModel.addKeyword(selectedSub!!.channel, kw) },
                 onRemoveKeyword = { kw -> viewModel.removeKeyword(selectedSub!!.channel, kw) },
+                onSetIncludePhotos = { value -> viewModel.setIncludePhotos(selectedSub!!.channel, value) },
             )
         }
     }

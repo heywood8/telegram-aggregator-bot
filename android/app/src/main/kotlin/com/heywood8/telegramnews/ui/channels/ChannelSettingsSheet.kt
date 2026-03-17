@@ -15,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ fun ChannelSettingsSheet(
     onSetMode: (String) -> Unit,
     onAddKeyword: (String) -> Unit,
     onRemoveKeyword: (String) -> Unit,
+    onSetIncludePhotos: (Boolean) -> Unit,
 ) {
     var newKeyword by rememberSaveable { mutableStateOf("") }
 
@@ -56,6 +58,20 @@ fun ChannelSettingsSheet(
                     label = { Text(mode.replaceFirstChar { it.uppercase() }) },
                 )
             }
+        }
+
+        // Photo toggle
+        Text("Photos", style = MaterialTheme.typography.labelMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Include photo-only messages", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = sub.includePhotos,
+                onCheckedChange = onSetIncludePhotos,
+            )
         }
 
         // Keywords
