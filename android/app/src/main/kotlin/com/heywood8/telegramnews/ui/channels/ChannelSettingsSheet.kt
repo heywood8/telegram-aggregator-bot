@@ -67,7 +67,7 @@ fun ChannelSettingsSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("Include photo-only messages", style = MaterialTheme.typography.bodyMedium)
+            Text("Include photos", style = MaterialTheme.typography.bodyMedium)
             Switch(
                 checked = sub.includePhotos,
                 onCheckedChange = onSetIncludePhotos,

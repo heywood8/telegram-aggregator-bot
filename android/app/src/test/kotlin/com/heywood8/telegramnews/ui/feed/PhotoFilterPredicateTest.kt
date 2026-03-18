@@ -7,12 +7,12 @@ import org.junit.Test
 class PhotoFilterPredicateTest {
 
     // Replicates the filter predicate used in FeedViewModel.filteredMessages:
-    //   includePhotos || mediaType != MediaType.PHOTO || text.isNotBlank()
+    //   includePhotos || mediaType != MediaType.PHOTO
     private fun shouldShow(
         includePhotos: Boolean,
         mediaType: String?,
         text: String,
-    ): Boolean = includePhotos || mediaType != MediaType.PHOTO || text.isNotBlank()
+    ): Boolean = includePhotos || mediaType != MediaType.PHOTO
 
     @Test
     fun `photo-only message hidden when includePhotos is false`() {
@@ -25,8 +25,13 @@ class PhotoFilterPredicateTest {
     }
 
     @Test
-    fun `photo with caption always shown regardless of setting`() {
-        assertTrue(shouldShow(includePhotos = false, mediaType = MediaType.PHOTO, text = "Some caption"))
+    fun `photo with caption hidden when includePhotos is false`() {
+        assertFalse(shouldShow(includePhotos = false, mediaType = MediaType.PHOTO, text = "Some caption"))
+    }
+
+    @Test
+    fun `photo with caption shown when includePhotos is true`() {
+        assertTrue(shouldShow(includePhotos = true, mediaType = MediaType.PHOTO, text = "Some caption"))
     }
 
     @Test

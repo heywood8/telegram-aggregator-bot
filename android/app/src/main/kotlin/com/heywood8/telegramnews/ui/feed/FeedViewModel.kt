@@ -84,7 +84,7 @@ class FeedViewModel @Inject constructor(
         val channelFiltered = if (channel == null) withRead else withRead.filter { it.channel == channel }
         channelFiltered.filter { message ->
             val includePhotos = subscriptionsByChannel[message.channel]?.includePhotos ?: false
-            includePhotos || message.mediaType != MediaType.PHOTO || message.text.isNotBlank()
+            includePhotos || message.mediaType != MediaType.PHOTO
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -137,7 +137,7 @@ class FeedViewModel @Inject constructor(
                 try {
                     val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
                     val filtered = messages.filter { msg ->
-                        (sub.includePhotos && msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
+                        (sub.includePhotos && msg.mediaType == MediaType.PHOTO) ||
                             filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                     }
                     if (filtered.isNotEmpty()) {
@@ -169,7 +169,7 @@ class FeedViewModel @Inject constructor(
                     telegramRepo.observeNewMessages(channels)
                         .filter { msg ->
                             val sub = subs.find { it.channel == msg.channel } ?: return@filter false
-                            (sub.includePhotos && msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
+                            (sub.includePhotos && msg.mediaType == MediaType.PHOTO) ||
                                 filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                         }
                 }
@@ -195,7 +195,7 @@ class FeedViewModel @Inject constructor(
                 try {
                     val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
                     val filtered = messages.filter { msg ->
-                        (sub.includePhotos && msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
+                        (sub.includePhotos && msg.mediaType == MediaType.PHOTO) ||
                             filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
                     }
                     if (filtered.isNotEmpty()) {
