@@ -209,6 +209,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                                 message = message,
                                 showChannelIcons = showChannelIcons,
                                 photoLayout = photoLayout,
+                                showPhoto = subscriptions.find { it.channel == message.channel }?.includePhotos ?: false,
                                 getPhotoPath = getPhotoPath,
                                 onClick = { selectedMessage = message },
                             )
@@ -235,6 +236,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                                 message = message,
                                 showChannelIcons = showChannelIcons,
                                 photoLayout = photoLayout,
+                                showPhoto = subscriptions.find { it.channel == message.channel }?.includePhotos ?: false,
                                 getPhotoPath = getPhotoPath,
                                 onClick = { selectedMessage = message },
                             )
@@ -246,6 +248,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
             if (selectedMessage != null) {
                 ArticleSheet(
                     message = selectedMessage!!,
+                    showPhoto = subscriptions.find { it.channel == selectedMessage!!.channel }?.includePhotos ?: false,
                     getPhotoPath = getPhotoPath,
                     onDismiss = { selectedMessage = null },
                 )
@@ -259,12 +262,14 @@ private fun FeedItem(
     message: Message,
     showChannelIcons: Boolean,
     photoLayout: PhotoLayout,
+    showPhoto: Boolean,
     getPhotoPath: suspend (Int) -> String?,
     onClick: () -> Unit,
 ) {
     val photoPath by produceState<String?>(null, message.photoFileId) {
         value = message.photoFileId?.let { getPhotoPath(it) }
     }
+    val effectivePhotoPath = if (showPhoto) photoPath else null
 
     ElevatedCard(
         onClick = onClick,
@@ -272,14 +277,14 @@ private fun FeedItem(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
     ) {
         when {
-            photoPath != null && photoLayout == PhotoLayout.LEFT -> {
+            effectivePhotoPath != null && photoLayout == PhotoLayout.LEFT -> {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.Top,
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(java.io.File(photoPath!!))
+                            .data(java.io.File(effectivePhotoPath!!))
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
@@ -327,10 +332,10 @@ private fun FeedItem(
             }
             else -> {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    if (photoPath != null && photoLayout == PhotoLayout.ABOVE) {
+                    if (effectivePhotoPath != null && photoLayout == PhotoLayout.ABOVE) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(java.io.File(photoPath!!))
+                                .data(java.io.File(effectivePhotoPath!!))
                                 .build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
@@ -366,7 +371,7 @@ private fun FeedItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    val bodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank() && photoPath == null) {
+                    val bodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank() && effectivePhotoPath == null) {
                         buildAnnotatedString {
                             withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append("[Photo]") }
                         }
@@ -380,10 +385,10 @@ private fun FeedItem(
                         maxLines = 6,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (photoPath != null && photoLayout == PhotoLayout.BELOW) {
+                    if (effectivePhotoPath != null && photoLayout == PhotoLayout.BELOW) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(java.io.File(photoPath!!))
+                                .data(java.io.File(effectivePhotoPath!!))
                                 .build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
@@ -403,12 +408,14 @@ private fun FeedItem(
 @Composable
 private fun ArticleSheet(
     message: Message,
+    showPhoto: Boolean,
     getPhotoPath: suspend (Int) -> String?,
     onDismiss: () -> Unit,
 ) {
     val photoPath by produceState<String?>(null, message.photoFileId) {
         value = message.photoFileId?.let { getPhotoPath(it) }
     }
+    val effectivePhotoPath = if (showPhoto) photoPath else null
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -421,10 +428,10 @@ private fun ArticleSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
         ) {
-            if (photoPath != null) {
+            if (effectivePhotoPath != null) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(java.io.File(photoPath!!))
+                        .data(java.io.File(effectivePhotoPath!!))
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
@@ -445,7 +452,7 @@ private fun ArticleSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
-            val articleBodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank() && photoPath == null) {
+            val articleBodyText = if (message.mediaType == MediaType.PHOTO && message.text.isBlank() && effectivePhotoPath == null) {
                 buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append("[Photo]") }
                 }

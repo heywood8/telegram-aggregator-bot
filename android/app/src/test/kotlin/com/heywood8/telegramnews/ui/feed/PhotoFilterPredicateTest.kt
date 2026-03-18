@@ -8,6 +8,8 @@ class PhotoFilterPredicateTest {
 
     // Replicates the filter predicate used in FeedViewModel.filteredMessages:
     //   includePhotos || mediaType != MediaType.PHOTO || text.isNotBlank()
+    // Photo-only messages (no caption) are hidden when includePhotos is false.
+    // Photo messages with captions are always shown (photo suppressed in UI when includePhotos is false).
     private fun shouldShow(
         includePhotos: Boolean,
         mediaType: String?,
@@ -27,6 +29,11 @@ class PhotoFilterPredicateTest {
     @Test
     fun `photo with caption always shown regardless of setting`() {
         assertTrue(shouldShow(includePhotos = false, mediaType = MediaType.PHOTO, text = "Some caption"))
+    }
+
+    @Test
+    fun `photo with caption shown when includePhotos is true`() {
+        assertTrue(shouldShow(includePhotos = true, mediaType = MediaType.PHOTO, text = "Some caption"))
     }
 
     @Test
