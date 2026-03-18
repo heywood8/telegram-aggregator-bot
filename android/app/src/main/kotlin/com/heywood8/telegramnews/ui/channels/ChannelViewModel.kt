@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -41,9 +42,11 @@ class ChannelViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Selected subscription for the settings sheet
-    private val _selectedSub = MutableStateFlow<Subscription?>(null)
-    val selectedSub: StateFlow<Subscription?> = _selectedSub.asStateFlow()
+    // Selected subscription for the settings sheet — derived from subscriptions so keywords stay live
+    private val _selectedChannel = MutableStateFlow<String?>(null)
+    val selectedSub: StateFlow<Subscription?> = combine(_selectedChannel, subscriptions) { channel, subs ->
+        channel?.let { subs.find { it.channel == channel } }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun search(query: String) {
         if (query.isBlank()) {
@@ -77,23 +80,19 @@ class ChannelViewModel @Inject constructor(
     fun unsubscribe(channel: String) {
         viewModelScope.launch {
             subscriptionUseCase.removeSubscription(FeedViewModel.USER_ID, channel)
-            _selectedSub.value = null
+            _selectedChannel.value = null
         }
     }
 
     fun setMode(channel: String, mode: String) {
         viewModelScope.launch {
             subscriptionUseCase.setMode(FeedViewModel.USER_ID, channel, mode)
-            // Refresh selected sub
-            _selectedSub.value = subscriptions.value.find { it.channel == channel }
         }
     }
 
     fun setIncludePhotos(channel: String, value: Boolean) {
         viewModelScope.launch {
             localRepo.setIncludePhotos(FeedViewModel.USER_ID, channel, value)
-            _selectedSub.value = subscriptions.value.find { it.channel == channel }
-                ?.copy(includePhotos = value)
         }
     }
 
@@ -110,7 +109,7 @@ class ChannelViewModel @Inject constructor(
     }
 
     fun selectSubscription(sub: Subscription?) {
-        _selectedSub.value = sub
+        _selectedChannel.value = sub?.channel
     }
 
     fun clearError() {
