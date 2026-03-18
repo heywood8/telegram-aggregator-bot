@@ -30,26 +30,84 @@ val photoFileId: Int? = null
 
 ### DB Migration
 
-`MIGRATION_4_5` (or from current version if per-channel-photo-filter hasn't been merged):
+Current DB version is 3. `MIGRATION_3_4` adds the new column:
 ```sql
 ALTER TABLE messages ADD COLUMN photo_file_id INTEGER
 ```
+`AppDatabase` version bumps 3→4. `DatabaseModule` updated to include `MIGRATION_3_4`.
 
-`AppDatabase` version bumped accordingly. `DatabaseModule` updated to include the new migration.
+### MediaType constant
 
-### TelegramRepositoryImpl
+Define a new file `domain/model/MediaType.kt`:
+```kotlin
+object MediaType {
+    const val PHOTO = "photo"
+}
+```
 
-New helper extracts the best photo file ID from `TdApi.MessagePhoto`:
-- Picks the largest `PhotoSize` with width ≤ 1280px; falls back to the overall largest.
-- Returns `Int?` (null for non-photo content).
+### TelegramRepositoryImpl — extracting photo info
 
-Both `fetchMessagesSince` and `observeNewMessages` populate `photoFileId` on the resulting `Message`.
+New helpers:
 
-New method added to `TelegramRepository` interface and implemented in `TelegramRepositoryImpl`:
+```kotlin
+private fun extractPhotoFileId(content: TdApi.MessageContent): Int? {
+    val sizes = (content as? TdApi.MessagePhoto)?.photo?.sizes ?: return null
+    val chosen = sizes.filter { it.width <= 1280 }.maxByOrNull { it.width }
+        ?: sizes.maxByOrNull { it.width }
+    return chosen?.photo?.id
+}
+
+private fun extractMediaType(content: TdApi.MessageContent): String? = when (content) {
+    is TdApi.MessagePhoto -> MediaType.PHOTO
+    else -> null
+}
+```
+
+Both `fetchMessagesSince` and `observeNewMessages` call both helpers and populate `mediaType` and `photoFileId` on the resulting `Message`.
+
+**Photo-only messages (no caption):** Both methods currently drop messages where `text.isBlank()`. Both guards must be relaxed: if `mediaType == MediaType.PHOTO`, the message is included/emitted regardless of caption.
+
+- In `fetchMessagesSince`: replace `.ifBlank { return@mapNotNull null }` with a check that allows photo messages through even when text is blank.
+- In `observeNewMessages`: replace `if (text.isNotBlank())` with `if (text.isNotBlank() || mediaType == MediaType.PHOTO)`.
+
+`mediaUrl: String?` on `Message` and `MessageEntity` is retained as-is (reserved for future use; not populated by this feature).
+
+### FeedViewModel — shouldForward bypass for photos
+
+`FeedViewModel` has three paths that call `filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)` before saving to Room (on-load, refresh, real-time collect). Photo-only messages have blank text and will be silently dropped by this filter unless bypassed. All three paths must pass photo-only messages through unconditionally, analogous to the `observeNewMessages` fix:
+
+```kotlin
+val passes = (msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
+    filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
+if (!passes) return@mapNotNull null  // or equivalent skip
+```
+
+### TelegramRepository interface
+
 ```kotlin
 suspend fun downloadFile(fileId: Int): String?
 ```
-Calls `api.sendFunctionAsync(TdApi.DownloadFile(fileId, priority = 1, offset = 0, limit = 0, synchronous = true))` and returns `file.local.path` if `file.local.isDownloadingCompleted`, else `null`. Wrapped in try/catch.
+
+### TelegramRepositoryImpl — downloadFile
+
+```kotlin
+override suspend fun downloadFile(fileId: Int): String? = try {
+    val file = api.sendFunctionAsync(TdApi.DownloadFile(fileId, 1, 0, 0, true))
+    if (file.local.isDownloadingCompleted) file.local.path else null
+} catch (_: Exception) { null }
+```
+
+### FeedViewModel — write path
+
+All `MessageEntity` constructor calls in `FeedViewModel` (on-load, refresh, real-time collect) and in `SyncWorker` must include `photoFileId = msg.photoFileId` and `mediaType = msg.mediaType`.
+
+### FeedViewModel — read path
+
+The `filteredMessages` mapping from `MessageEntity` to `Message` must propagate both `mediaType` and `photoFileId`:
+```kotlin
+Message(e.id, e.channel, e.channelTitle.ifBlank { e.channel }, e.text, e.timestamp,
+        mediaType = e.mediaType, photoFileId = e.photoFileId)
+```
 
 ---
 
@@ -64,7 +122,6 @@ enum class PhotoLayout { ABOVE, BELOW, LEFT }
 
 ### UserPreferencesRepository
 
-Adds:
 ```kotlin
 private const val KEY_PHOTO_LAYOUT = "photo_layout"
 
@@ -81,7 +138,6 @@ fun setPhotoLayout(layout: PhotoLayout) {
 
 ### SettingsViewModel
 
-Exposes:
 ```kotlin
 val photoLayout: StateFlow<PhotoLayout> = userPrefs.photoLayout
 fun setPhotoLayout(layout: PhotoLayout) { userPrefs.setPhotoLayout(layout) }
@@ -93,20 +149,19 @@ New row in the Display section, below the channel icons toggle:
 ```
 Photo layout   [Above] [Below] [Left]
 ```
-Implemented as `SingleChoiceSegmentedButtonRow` (Material3) with three `SegmentedButton` entries.
+Implemented as `SingleChoiceSegmentedButtonRow` with three `SegmentedButton` entries (requires Material3 ≥ 1.2.0, which is included in the project's Compose BOM).
 
 ---
 
 ## Section 3 — FeedViewModel
 
-Adds:
 ```kotlin
 val photoLayout: StateFlow<PhotoLayout> = userPrefs.photoLayout
 
 suspend fun getPhotoPath(fileId: Int): String? = telegramRepo.downloadFile(fileId)
 ```
 
-No other ViewModel changes. Photo download is triggered on demand from the UI composable.
+`userPrefs` is already injected in `FeedViewModel`. No new injection needed.
 
 ---
 
@@ -116,8 +171,9 @@ No other ViewModel changes. Photo download is triggered on demand from the UI co
 
 Add to `app/build.gradle.kts`:
 ```kotlin
-implementation("io.coil-kt:coil-compose:2.6.0")
+implementation("io.coil-kt.coil3:coil-compose:3.1.0")
 ```
+(Coil 3.x; artifact ID changed from `io.coil-kt` to `io.coil-kt.coil3`.)
 
 ### FeedItem
 
@@ -139,15 +195,37 @@ Layout based on `photoLayout`:
 - **BELOW** — `Column { Text(...); AsyncImage(full width, max height 200dp, Crop) }`
 - **LEFT** — `Row { AsyncImage(80×80dp, Crop); Column { Text(...) } }`
 
-`AsyncImage` is only rendered when `photoPath != null`. No placeholder/error image — content simply doesn't appear until ready.
+`AsyncImage` is rendered only when `photoPath != null`. No placeholder or error image.
+
+`FeedScreen` passes the new params to **both** `FeedItem` call sites (unread list and read list).
 
 ### ArticleSheet
 
-Always renders a full-width photo (max height 300dp, `contentScale = Fit`) above the text when `message.photoFileId != null`. Uses the same `produceState` + `AsyncImage` pattern. No layout setting applies here.
+Signature:
+```kotlin
+private fun ArticleSheet(
+    message: Message,
+    getPhotoPath: suspend (Int) -> String?,
+    onDismiss: () -> Unit,
+)
+```
 
-### Call sites
+Always renders a full-width photo (max height 300dp, `contentScale = Fit`) above the text when `message.photoFileId != null`. Uses the same `produceState` + `AsyncImage` pattern. No layout setting applies here. `ArticleSheet` receives `getPhotoPath` as a parameter from `FeedScreen`.
 
-`FeedScreen` collects `photoLayout` from the ViewModel and passes it plus a lambda `{ id -> viewModel.getPhotoPath(id) }` to each `FeedItem`.
+### FeedScreen call site
+
+```kotlin
+val photoLayout by viewModel.photoLayout.collectAsStateWithLifecycle()
+val getPhotoPath: suspend (Int) -> String? = { viewModel.getPhotoPath(it) }
+
+// passed to both FeedItem usages and to ArticleSheet
+```
+
+---
+
+## SyncWorker
+
+`SyncWorker` calls `telegramRepo.fetchMessagesSince` and constructs `MessageEntity` objects. It is **in scope**: its `MessageEntity` constructor calls must include `photoFileId = msg.photoFileId` and `mediaType = msg.mediaType`.
 
 ---
 
