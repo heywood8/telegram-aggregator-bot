@@ -10,7 +10,7 @@ import com.heywood8.telegramnews.data.local.entity.SubscriptionEntity
 import com.heywood8.telegramnews.domain.model.Subscription
 import com.heywood8.telegramnews.domain.repository.LocalRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 
 class LocalRepositoryImpl @Inject constructor(
@@ -21,13 +21,17 @@ class LocalRepositoryImpl @Inject constructor(
 ) : LocalRepository {
 
     override fun observeSubscriptions(userId: Long): Flow<List<Subscription>> =
-        subscriptionDao.observeByUser(userId).map { entities ->
+        combine(
+            subscriptionDao.observeByUser(userId),
+            keywordDao.observeByUser(userId),
+        ) { entities, keywordEntities ->
+            val keywordMap = keywordEntities.groupBy { it.channel }
+                .mapValues { entry -> entry.value.map { it.keyword } }
             entities.map { entity ->
                 Subscription(
                     channel = entity.channel,
                     mode = entity.mode,
-                    // TODO: keywords are not joined here — callers must fetch them separately via getKeywords()
-                    keywords = emptyList(),
+                    keywords = keywordMap[entity.channel] ?: emptyList(),
                     active = entity.active,
                     includePhotos = entity.includePhotos,
                 )
