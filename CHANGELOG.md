@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/heywood8/taggro/compare/v0.13.0...v0.14.0) (2026-03-21)
+
+
+### Features
+
+* reverse feed order so newest messages appear at bottom ([#47](https://github.com/heywood8/taggro/issues/47)) ([97e4955](https://github.com/heywood8/taggro/commit/97e4955c1022335204e003536f61f126039d7b98))
+
 ## [0.13.0](https://github.com/heywood8/taggro/compare/v0.12.0...v0.13.0) (2026-03-21)
 
 
