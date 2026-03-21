@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/heywood8/taggro/compare/v0.16.0...v0.16.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* add TELEGRAM_BOT_TOKEN to GHA local.properties write step ([#53](https://github.com/heywood8/taggro/issues/53)) ([9b9fb83](https://github.com/heywood8/taggro/commit/9b9fb83b7b52f238ca8c5f87cfd1a41917be49c4))
+
 ## [0.16.0](https://github.com/heywood8/taggro/compare/v0.15.0...v0.16.0) (2026-03-21)
 
 
