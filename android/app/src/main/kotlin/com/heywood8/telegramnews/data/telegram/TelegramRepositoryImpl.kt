@@ -157,6 +157,7 @@ class TelegramRepositoryImpl @Inject constructor(
                             timestamp = msg.date.toLong(),
                             mediaType = mediaType,
                             photoFileId = photoFileId,
+                            mediaAlbumId = if (msg.mediaAlbumId != 0L) msg.mediaAlbumId else null,
                         )
                     )
                 }
@@ -184,6 +185,7 @@ class TelegramRepositoryImpl @Inject constructor(
                     timestamp = msg.date.toLong(),
                     mediaType = mediaType,
                     photoFileId = photoFileId,
+                    mediaAlbumId = if (msg.mediaAlbumId != 0L) msg.mediaAlbumId else null,
                 )
             } ?: emptyList()
         } catch (e: Exception) {
