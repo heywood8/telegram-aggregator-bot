@@ -151,36 +151,44 @@ class FeedViewModel @Inject constructor(
         }
     }
 
+    private suspend fun doRefresh() {
+        val subs = localRepo.observeSubscriptions(USER_ID).first()
+        for (sub in subs.filter { it.active }) {
+            try {
+                val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
+                val filtered = messages.filter { msg ->
+                    (sub.includePhotos && msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
+                        filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
+                }
+                if (filtered.isNotEmpty()) {
+                    messageDao.insertAll(filtered.map { msg ->
+                        MessageEntity(
+                            id = msg.id,
+                            channel = msg.channel,
+                            channelTitle = msg.channelTitle,
+                            text = msg.text,
+                            timestamp = msg.timestamp,
+                            mediaType = msg.mediaType,
+                            photoFileId = msg.photoFileId,
+                            mediaAlbumId = msg.mediaAlbumId,
+                        )
+                    })
+                    messageDao.pruneChannel(sub.channel)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            val subs = localRepo.observeSubscriptions(USER_ID).first()
-            for (sub in subs.filter { it.active }) {
-                try {
-                    val messages = telegramRepo.fetchMessagesSince(sub.channel, 0)
-                    val filtered = messages.filter { msg ->
-                        (sub.includePhotos && msg.mediaType == MediaType.PHOTO && msg.text.isBlank()) ||
-                            filterUseCase.shouldForward(msg.text, sub.mode, sub.keywords)
-                    }
-                    if (filtered.isNotEmpty()) {
-                        messageDao.insertAll(filtered.map { msg ->
-                            MessageEntity(
-                                id = msg.id,
-                                channel = msg.channel,
-                                channelTitle = msg.channelTitle,
-                                text = msg.text,
-                                timestamp = msg.timestamp,
-                                mediaType = msg.mediaType,
-                                photoFileId = msg.photoFileId,
-                                mediaAlbumId = msg.mediaAlbumId,
-                            )
-                        })
-                        messageDao.pruneChannel(sub.channel)
-                    }
-                } catch (_: Exception) {}
-            }
+            doRefresh()
             _isRefreshing.value = false
         }
+    }
+
+    fun silentRefresh() {
+        viewModelScope.launch { doRefresh() }
     }
 
     init {

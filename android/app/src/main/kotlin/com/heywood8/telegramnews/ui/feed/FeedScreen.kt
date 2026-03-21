@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +37,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,6 +102,14 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
         val isAtBottom = lastVisible >= layout.totalItemsCount - 2
         if (isAtBottom) {
             lazyListState.scrollToItem(layout.totalItemsCount - 1)
+        }
+    }
+
+    // Periodic silent refresh every 5 seconds while screen is active
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000)
+            viewModel.silentRefresh()
         }
     }
 
@@ -233,17 +244,37 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                         }
                         if (showSeparator && read.isNotEmpty() && unread.isNotEmpty()) {
                             item(key = "separator") {
-                                Column(
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
-                                    HorizontalDivider()
-                                    Text(
-                                        text = "New messages",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 4.dp),
+                                    HorizontalDivider(
+                                        modifier = Modifier.weight(1f),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        thickness = 1.5.dp,
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = RoundedCornerShape(50),
+                                            )
+                                            .padding(horizontal = 14.dp, vertical = 5.dp),
+                                    ) {
+                                        Text(
+                                            text = "${unread.size} new",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                    }
+                                    HorizontalDivider(
+                                        modifier = Modifier.weight(1f),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        thickness = 1.5.dp,
                                     )
                                 }
                             }
@@ -293,7 +324,15 @@ private fun FeedItem(
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = if (!message.isRead) 4.dp else 1.dp,
+        ),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (!message.isRead)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface,
+        ),
     ) {
         when {
             firstPhotoPath != null && !isAlbum && photoLayout == PhotoLayout.LEFT -> {
