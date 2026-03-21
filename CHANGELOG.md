@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/heywood8/taggro/compare/v0.15.0...v0.16.0) (2026-03-21)
+
+
+### Features
+
+* slicker feed UI with prominent new/old divider and 5s auto-refresh ([#51](https://github.com/heywood8/taggro/issues/51)) ([f79bcdf](https://github.com/heywood8/taggro/commit/f79bcdf7819d1b5ac24a0d5c46d8df5e7070a376))
+
 ## [0.15.0](https://github.com/heywood8/taggro/compare/v0.14.0...v0.15.0) (2026-03-21)
 
 
