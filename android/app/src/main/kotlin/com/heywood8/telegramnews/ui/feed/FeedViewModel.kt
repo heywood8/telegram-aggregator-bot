@@ -87,10 +87,16 @@ class FeedViewModel @Inject constructor(
             val includePhotos = subscriptionsByChannel[message.channel]?.includePhotos ?: false
             includePhotos || message.mediaType != MediaType.PHOTO || message.text.isNotBlank()
         }
+        val keywordFiltered = photoFiltered.filter { message ->
+            val sub = subscriptionsByChannel[message.channel] ?: return@filter true
+            // Pure photo-only messages pass keyword filtering unconditionally
+            if (message.mediaType == MediaType.PHOTO && message.text.isBlank()) return@filter true
+            filterUseCase.shouldForward(message.text, sub.mode, sub.keywords)
+        }
         // Group album photos: merge messages with the same mediaAlbumId into one entry
         val albumMap = LinkedHashMap<Long, Int>() // albumId -> index in result
         val result = mutableListOf<Message>()
-        for (msg in photoFiltered) {
+        for (msg in keywordFiltered) {
             val albumId = msg.mediaAlbumId
             if (albumId != null) {
                 val existingIdx = albumMap[albumId]
