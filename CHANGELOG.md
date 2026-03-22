@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/heywood8/taggro/compare/v0.19.0...v0.19.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* re-apply keyword filter at display time so adding exclude keyword hides existing messages ([#66](https://github.com/heywood8/taggro/issues/66)) ([9cd7783](https://github.com/heywood8/taggro/commit/9cd77839200dcce12fa23fac0a1760ddeddc78f8))
+
 ## [0.19.0](https://github.com/heywood8/taggro/compare/v0.18.0...v0.19.0) (2026-03-22)
 
 
