@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/heywood8/taggro/compare/v0.17.2...v0.18.0) (2026-03-22)
+
+
+### Features
+
+* add Open in Telegram button to article bottom sheet ([#62](https://github.com/heywood8/taggro/issues/62)) ([236b807](https://github.com/heywood8/taggro/commit/236b807069d66e5d3a2d9265ab6c727b7f07f498))
+
 ## [0.17.2](https://github.com/heywood8/taggro/compare/v0.17.1...v0.17.2) (2026-03-21)
 
 
